@@ -15,6 +15,7 @@ from PyQt5.QtCore import QObject
 from PyQt5.QtCore import QThread
 from PyQt5.QtCore import QEventLoop
 from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import *
 import FinanceDataReader as fdr
 from datetime import datetime
 import pickle
@@ -38,7 +39,7 @@ ACCOUNT_NO = '8111294711'
 매수수수료비율 = 0.00015  # 매도시 평단가에 곱해서 사용
 매도수수료비율 = 0.00015 + 0.003  # 매도시 현재가에 곱해서 사용
 화면번호 = "1234"
-ACCNT_INDEX = 4
+ACCNT_INDEX = 0
 
 # 로그 파일 핸들러
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -120,7 +121,7 @@ class SyncRequestDecorator:
         return func_wrapper
 
 
-class Kiwoom(QAxWidget):
+class Kiwoom(QAxWidget, QMainWindow):
     # 초당 5회 제한이므로 최소한 0.2초 대기해야 함
     # (2018년 10월 기준) 1시간에 1000회 제한하므로 3.6초 이상 대기해야 함
     연속요청대기초 = 4.0
@@ -152,8 +153,21 @@ class Kiwoom(QAxWidget):
         self.event = None
         self.result = {}
 
+        self.setWindowTitle("PyStock")
+        self.setGeometry(300, 300, 300, 150)
+
+        btn = QPushButton("Check state", self)
+        btn.move(20, 70)
+        btn.clicked.connect(self.btn_clicked)
+
     def run(self):
         print("== run ==")
+
+    def btn_clicked(self):
+        if self.kiwoom.dynamicCall("GetConnectState()") == 0:
+            self.statusBar().showMessage("Not connected")
+        else:
+            self.statusBar().showMessage("Connected")
 
     # -------------------------------------
     # 로그인 관련함수
@@ -962,6 +976,7 @@ def load_data():
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     hts = Kiwoom()
+    hts.show()
     result = -1
     order_type = 1
     # login
@@ -1006,5 +1021,6 @@ if __name__ == '__main__':
         if res.get('result') != 0:
             sys.exit()
 
+    app.exec_()
     # something
     pass

@@ -21,13 +21,32 @@ maesu_start_time = 90100
 maesu_end_time  = 153000
 maemae_logic = 'R'  # 'S':시가갭매매 'R':램덤매매
 order_method = "00" # "00":보통매매, "03":시장가매매
-class PyTrader(threading.Thread):
+class PyTrader(QMainWindow):
     def __init__(self):
-        threading.Thread.__init__(self)
         self.kiwoom = Kiwoom()
         if self.kiwoom.get_connect_state() == 0:
             self.kiwoom.comm_connect()
         self.order_type = 1      #1:매수,2:매도
+        super().__init__()
+        self.setWindowTitle("PyStock")
+        self.setGeometry(300, 300, 300, 150)
+
+        btn1 = QPushButton("Login", self)
+        btn1.move(20, 20)
+        btn1.clicked.connect(self.btn1_clicked)
+
+        btn2 = QPushButton("Check state", self)
+        btn2.move(20, 70)
+        btn2.clicked.connect(self.btn2_clicked)
+
+    def btn1_clicked(self):
+        ret = self.kiwoom.dynamicCall("CommConnect()")
+
+    def btn2_clicked(self):
+        if self.kiwoom.dynamicCall("GetConnectState()") == 0:
+            self.statusBar().showMessage("Not connected")
+        else:
+            self.statusBar().showMessage("Connected")
 
     def get_account(self):
         account_list = self.kiwoom.get_login_info("ACCNO")
@@ -65,14 +84,15 @@ class PyTrader(threading.Thread):
         stock_price = '6720'
         # 조건검색을 통해 저장한 데이타 가져오기
         local_buy_stock_code_list = self.load_data()
-        buy_stock_code = local_buy_stock_code_list[0]
+        # buy_stock_code = local_buy_stock_code_list[0]
         # buy_stock_code = global_buy_stock_code_list[0]
-        self.kiwoom.send_order("send_order", "0101", account, 1, buy_stock_code, nQty, stock_price, "00", "") #매수:1, 매도:2
-        result = self.kiwoom.order_result
-        if (result == 0):
-            print("매도주문을 하였습니다.")
-        else:
-            print("매도 실패하였습니다.")
+        for buy_stock_code in local_buy_stock_code_list:
+            self.kiwoom.send_order("send_order", "0101", account, 1, buy_stock_code, nQty, stock_price, "00", "") #매수:1, 매도:2
+            result = self.kiwoom.order_result
+            if (result == 0):
+                print("매도주문을 하였습니다.")
+            else:
+                print("매도 실패하였습니다.")
 
     def S_mae_mae(self):
         account = self.get_account()
@@ -233,4 +253,6 @@ class PyTrader(threading.Thread):
 
 app = QApplication(sys.argv)
 pymon = PyTrader()
+pymon.show()
 pymon.run()
+app.exec_()
